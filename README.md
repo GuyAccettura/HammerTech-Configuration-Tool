@@ -22,6 +22,27 @@ Without linking, run commands with:
 node ./src/cli.js --help
 ```
 
+## Local UI
+
+Start the local web UI:
+
+```powershell
+npm run dev
+```
+
+Then open:
+
+```text
+http://127.0.0.1:8787
+```
+
+Use `PORT` to choose another port:
+
+```powershell
+$env:PORT="8790"
+npm run dev
+```
+
 ## Authentication
 
 Public API bearer tokens are retrieved directly from HammerTech:

@@ -8,7 +8,9 @@
     "htconfig": "./src/cli.js"
   },
   "scripts": {
+    "dev": "node src/server.js",
     "lint": "node scripts/check-syntax.js",
+    "start": "node src/server.js",
     "test": "node --test"
   },
   "engines": {

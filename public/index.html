@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HammerTech Configuration Tool</title>
+    <link rel="stylesheet" href="/styles.css">
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <div class="eyebrow">HammerTech</div>
+        <h1>Configuration Tool</h1>
+      </div>
+      <div class="session-pill" id="sessionPill">No session</div>
+    </header>
+
+    <main class="shell">
+      <section class="auth-panel" aria-labelledby="authTitle">
+        <div class="section-heading">
+          <h2 id="authTitle">Session</h2>
+          <button class="ghost-button" id="clearSessionButton" type="button">Clear</button>
+        </div>
+        <form class="auth-grid" id="authForm">
+          <label>
+            <span>Region</span>
+            <select name="region">
+              <option value="us">US</option>
+              <option value="au">AU</option>
+              <option value="eu">EU</option>
+            </select>
+          </label>
+          <label>
+            <span>Tenant</span>
+            <input name="tenant" autocomplete="organization" required>
+          </label>
+          <label>
+            <span>Email</span>
+            <input name="email" type="email" autocomplete="username" required>
+          </label>
+          <label>
+            <span>Password</span>
+            <input name="password" type="password" autocomplete="current-password" required>
+          </label>
+          <button class="primary-button" type="submit">Sign In</button>
+        </form>
+      </section>
+
+      <nav class="tabs" aria-label="Tool views">
+        <button class="tab active" type="button" data-view="importView">Import</button>
+        <button class="tab" type="button" data-view="usersView">Users</button>
+        <button class="tab" type="button" data-view="requestView">Request</button>
+      </nav>
+
+      <section class="view active" id="importView" aria-labelledby="importTitle">
+        <div class="section-heading">
+          <h2 id="importTitle">Spreadsheet Import</h2>
+          <div class="actions">
+            <button class="secondary-button" id="planButton" type="button">Dry Run</button>
+            <button class="danger-button" id="applyButton" type="button">Apply</button>
+          </div>
+        </div>
+        <div class="import-grid">
+          <label class="file-input">
+            <span>Spreadsheet</span>
+            <input id="importFile" type="file" accept=".csv,.xlsx,.xlsm">
+          </label>
+          <label>
+            <span>Sheet</span>
+            <input id="sheetName" placeholder="Users">
+          </label>
+          <label>
+            <span>Default Action</span>
+            <select id="defaultAction">
+              <option value="create">create</option>
+              <option value="upsert">upsert</option>
+              <option value="update">update</option>
+              <option value="delete">delete</option>
+              <option value="get">get</option>
+            </select>
+          </label>
+          <label class="check-label">
+            <input id="matchByEmail" type="checkbox" checked>
+            <span>Match by email</span>
+          </label>
+          <label class="check-label">
+            <input id="continueOnError" type="checkbox">
+            <span>Continue on error</span>
+          </label>
+        </div>
+        <div class="status-line" id="importStatus">Ready</div>
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Row</th>
+                <th>Action</th>
+                <th>Target</th>
+                <th>Status</th>
+                <th>Message</th>
+              </tr>
+            </thead>
+            <tbody id="importResults"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="view" id="usersView" aria-labelledby="usersTitle">
+        <div class="section-heading">
+          <h2 id="usersTitle">Users</h2>
+          <div class="actions">
+            <label class="check-label compact">
+              <input id="includeNotAssigned" type="checkbox" checked>
+              <span>Unassigned</span>
+            </label>
+            <button class="secondary-button" id="loadUsersButton" type="button">Refresh</button>
+          </div>
+        </div>
+        <div class="users-layout">
+          <div class="table-wrap user-list-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Name</th>
+                  <th>Email</th>
+                  <th>Roles</th>
+                  <th>State</th>
+                </tr>
+              </thead>
+              <tbody id="usersTable"></tbody>
+            </table>
+          </div>
+          <form class="detail-panel" id="userDetailForm">
+            <input name="id" type="hidden">
+            <label>
+              <span>ID</span>
+              <input name="visibleId" disabled>
+            </label>
+            <label>
+              <span>Name</span>
+              <input name="name">
+            </label>
+            <label>
+              <span>Title</span>
+              <input name="title">
+            </label>
+            <label>
+              <span>Mobile</span>
+              <input name="mobile">
+            </label>
+            <label>
+              <span>Roles</span>
+              <input name="roleNames" placeholder="admin, safetymanager">
+            </label>
+            <div class="actions detail-actions">
+              <button class="secondary-button" type="submit">Update</button>
+              <button class="danger-button" id="deleteUserButton" type="button">Delete</button>
+            </div>
+          </form>
+        </div>
+        <div class="status-line" id="usersStatus">Ready</div>
+      </section>
+
+      <section class="view" id="requestView" aria-labelledby="requestTitle">
+        <div class="section-heading">
+          <h2 id="requestTitle">Authenticated Request</h2>
+          <button class="secondary-button" id="sendRequestButton" type="button">Send</button>
+        </div>
+        <div class="request-grid">
+          <label>
+            <span>Method</span>
+            <select id="requestMethod">
+              <option>GET</option>
+              <option>POST</option>
+              <option>PATCH</option>
+              <option>PUT</option>
+              <option>DELETE</option>
+            </select>
+          </label>
+          <label class="request-url">
+            <span>Path or URL</span>
+            <input id="requestUrl" placeholder="/api/v1/Users">
+          </label>
+          <label class="check-label">
+            <input id="cookieOnly" type="checkbox">
+            <span>Cookie only</span>
+          </label>
+        </div>
+        <label class="code-field">
+          <span>JSON Body</span>
+          <textarea id="requestBody" spellcheck="false"></textarea>
+        </label>
+        <pre class="response-box" id="requestResponse">{}</pre>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="/app.js" type="module"></script>
+  </body>
+</html>

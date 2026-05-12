@@ -2,9 +2,14 @@ import { readFile } from "node:fs/promises";
 import { extname } from "node:path";
 
 export async function readSpreadsheetRows(filePath, { sheet } = {}) {
-  const extension = extname(filePath).toLowerCase();
+  const buffer = await readFile(filePath);
+  return readSpreadsheetRowsFromBuffer(filePath, buffer, { sheet });
+}
+
+export async function readSpreadsheetRowsFromBuffer(fileName, buffer, { sheet } = {}) {
+  const extension = extname(fileName).toLowerCase();
   if (extension === ".csv" || extension === ".txt") {
-    const text = await readFile(filePath, "utf8");
+    const text = Buffer.isBuffer(buffer) ? buffer.toString("utf8") : Buffer.from(buffer).toString("utf8");
     return normalizeRows(parseCsv(text));
   }
 
@@ -17,7 +22,7 @@ export async function readSpreadsheetRows(filePath, { sheet } = {}) {
     }
 
     const workbook = new ExcelJS.Workbook();
-    await workbook.xlsx.readFile(filePath);
+    await workbook.xlsx.load(buffer);
     const worksheet = sheet ? workbook.getWorksheet(sheet) : workbook.worksheets[0];
     if (!worksheet) {
       throw new Error(`Sheet "${sheet || ""}" was not found. Available sheets: ${workbook.worksheets.map((item) => item.name).join(", ")}.`);

@@ -1,7 +1,7 @@
 .hammertech/
+.hammertech-server*.log
 node_modules/
 npm-debug.log*
 coverage/
 .env
 *.local
-

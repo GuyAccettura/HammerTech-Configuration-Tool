@@ -1,4 +1,4 @@
-import { mkdir, readFile, writeFile } from "node:fs/promises";
+import { mkdir, readFile, unlink, writeFile } from "node:fs/promises";
 import { dirname } from "node:path";
 import { CookieJar, HammerTechClient } from "./http.js";
 
@@ -17,6 +17,14 @@ export async function saveSession(sessionPath, session) {
   await writeFile(sessionPath, `${JSON.stringify(session, null, 2)}\n`, { mode: 0o600 });
 }
 
+export async function deleteSession(sessionPath) {
+  try {
+    await unlink(sessionPath);
+  } catch (error) {
+    if (error.code !== "ENOENT") throw error;
+  }
+}
+
 export function clientFromSession(session, fetchImpl = globalThis.fetch) {
   if (!session?.region) throw new Error("Session file is missing region.");
   return new HammerTechClient({
@@ -26,4 +34,3 @@ export function clientFromSession(session, fetchImpl = globalThis.fetch) {
     fetchImpl
   });
 }
-
