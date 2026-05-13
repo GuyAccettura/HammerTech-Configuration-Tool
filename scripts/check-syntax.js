@@ -4,7 +4,7 @@ import { readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
 import { spawnSync } from "node:child_process";
 
-const roots = ["src", "test", "scripts"];
+const roots = ["src", "test", "scripts", "public"];
 const files = roots.flatMap((root) => findJavaScriptFiles(root));
 let failed = false;
 

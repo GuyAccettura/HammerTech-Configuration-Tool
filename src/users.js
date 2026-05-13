@@ -106,7 +106,7 @@ const BOOLEAN_FIELDS = new Set([
 const FIELD_ALIASES = buildAliases();
 const VALID_ACTIONS = new Set(["create", "update", "patch", "delete", "get", "upsert"]);
 
-export function rowToUserOperation(row, { defaultAction = "create", rowNumber = 0 } = {}) {
+export function rowToUserOperation(row, { defaultAction = "create", forceAction, rowNumber = 0 } = {}) {
   const warnings = [];
   const normalized = {};
 
@@ -122,7 +122,7 @@ export function rowToUserOperation(row, { defaultAction = "create", rowNumber = 
     normalized[field] = value;
   }
 
-  const action = String(normalized.action || defaultAction || "create").trim().toLowerCase();
+  const action = String(forceAction || normalized.action || defaultAction || "create").trim().toLowerCase();
   const operation = {
     rowNumber,
     action: action === "patch" ? "update" : action,

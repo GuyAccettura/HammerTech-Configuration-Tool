@@ -51,3 +51,17 @@ test("rowToUserOperation accepts update rows resolved by email", () => {
   });
 });
 
+test("rowToUserOperation can force create for UI spreadsheet imports", () => {
+  const op = rowToUserOperation({
+    action: "delete",
+    id: "11111111-1111-1111-1111-111111111111",
+    email: "new@example.com",
+    name: "New User",
+    title: "Manager",
+    roleNames: "safetymanager"
+  }, { forceAction: "create" });
+
+  assert.equal(op.action, "create");
+  assert.deepEqual(op.errors, []);
+  assert.equal(op.payload.email, "new@example.com");
+});

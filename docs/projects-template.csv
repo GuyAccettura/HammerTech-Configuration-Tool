@@ -1,0 +1,2 @@
+name,country,timeZoneString,siteAddress,domain,regionId,regionString,state,timeZoneStringIana,internalIdentifier,clientName,value,clientContactName,clientContactPhone,clientContactEmail,expectedStartDate,expectedEndDate,isArchived,isPublicProjectSiteHidden,isPublicProjectSiteVisibleToLoggedInUsers
+Downtown Tower,United States,Central Standard Time,100 Main St,,00000000-0000-0000-0000-000000000000,Central,IL,America/Chicago,PRJ-1001,Acme Construction,1000000,Alex Client,+15555550100,alex.client@example.com,2026-06-01T08:00:00Z,2027-06-01T17:00:00Z,false,false,true

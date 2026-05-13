@@ -26,6 +26,7 @@ body {
   line-height: 1.45;
 }
 
+a,
 button,
 input,
 select,
@@ -114,8 +115,7 @@ h2 {
 }
 
 .auth-grid,
-.import-grid,
-.request-grid {
+.import-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(130px, 1fr));
   gap: 12px;
@@ -159,11 +159,16 @@ textarea:focus {
 .danger-button,
 .ghost-button,
 .tab {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   min-height: 36px;
   border: 1px solid transparent;
   border-radius: 6px;
   padding: 7px 12px;
   font-weight: 650;
+  text-decoration: none;
+  white-space: nowrap;
 }
 
 .primary-button {
@@ -198,6 +203,10 @@ textarea:focus {
   color: var(--muted);
   background: #fff;
   border-color: var(--panel-border);
+}
+
+.button-link {
+  color: #123957;
 }
 
 .tabs {
@@ -329,9 +338,22 @@ tbody tr:hover {
   background: #fde3df;
 }
 
-.users-layout {
+.bulk-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 12px;
+}
+
+.selection-count {
+  min-width: 92px;
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.bulk-layout {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 340px;
+  grid-template-columns: minmax(0, 1fr) 360px;
   gap: 16px;
   align-items: start;
 }
@@ -349,33 +371,47 @@ tbody tr:hover {
   background: #fbfcfd;
 }
 
+.detail-panel h3 {
+  margin: 0 0 2px;
+  font-size: 15px;
+}
+
 .detail-actions {
   margin-top: 4px;
 }
 
-.request-grid {
-  grid-template-columns: 140px minmax(220px, 1fr) 140px;
+.stacked-actions {
+  justify-content: stretch;
 }
 
-.code-field {
-  margin-top: 12px;
+.stacked-actions button {
+  flex: 1;
+}
+
+.role-options {
+  display: grid;
+  gap: 4px;
+  padding: 4px 0 2px 24px;
 }
 
 textarea {
-  min-height: 150px;
+  min-height: 96px;
   resize: vertical;
   font-family: Consolas, "Courier New", monospace;
 }
 
-.response-box {
-  min-height: 220px;
-  max-height: 420px;
-  overflow: auto;
-  margin: 12px 0 0;
-  padding: 12px;
-  color: #e7edf3;
-  background: #1c252e;
-  border-radius: 8px;
+.select-col {
+  width: 42px;
+  text-align: center;
+}
+
+.select-col input {
+  width: 16px;
+  min-height: 16px;
+}
+
+.search-field {
+  width: min(260px, 100%);
 }
 
 .toast {
@@ -402,8 +438,7 @@ textarea {
 @media (max-width: 980px) {
   .auth-grid,
   .import-grid,
-  .request-grid,
-  .users-layout {
+  .bulk-layout {
     grid-template-columns: 1fr;
   }
 
@@ -424,7 +459,8 @@ textarea {
   }
 
   .tabs,
-  .actions {
+  .actions,
+  .bulk-toolbar {
     flex-wrap: wrap;
   }
 

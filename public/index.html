@@ -47,20 +47,30 @@
       </section>
 
       <nav class="tabs" aria-label="Tool views">
-        <button class="tab active" type="button" data-view="importView">Import</button>
-        <button class="tab" type="button" data-view="usersView">Users</button>
-        <button class="tab" type="button" data-view="requestView">Request</button>
+        <button class="tab active" type="button" data-view="importView">Spreadsheet Import</button>
+        <button class="tab" type="button" data-view="manageView">Manage Users</button>
+        <button class="tab" type="button" data-view="projectsView">Manage Projects</button>
+        <button class="tab" type="button" data-view="employersView">Manage Employers</button>
       </nav>
 
       <section class="view active" id="importView" aria-labelledby="importTitle">
         <div class="section-heading">
           <h2 id="importTitle">Spreadsheet Import</h2>
           <div class="actions">
+            <a class="secondary-button button-link" id="templateLink" href="/api/templates/users.csv" download>Download Template</a>
             <button class="secondary-button" id="planButton" type="button">Dry Run</button>
             <button class="danger-button" id="applyButton" type="button">Apply</button>
           </div>
         </div>
         <div class="import-grid">
+          <label>
+            <span>Import Type</span>
+            <select id="importEntity">
+              <option value="users">Users</option>
+              <option value="projects">Projects</option>
+              <option value="employer-profiles">Employer Profiles</option>
+            </select>
+          </label>
           <label class="file-input">
             <span>Spreadsheet</span>
             <input id="importFile" type="file" accept=".csv,.xlsx,.xlsm">
@@ -68,20 +78,6 @@
           <label>
             <span>Sheet</span>
             <input id="sheetName" placeholder="Users">
-          </label>
-          <label>
-            <span>Default Action</span>
-            <select id="defaultAction">
-              <option value="create">create</option>
-              <option value="upsert">upsert</option>
-              <option value="update">update</option>
-              <option value="delete">delete</option>
-              <option value="get">get</option>
-            </select>
-          </label>
-          <label class="check-label">
-            <input id="matchByEmail" type="checkbox" checked>
-            <span>Match by email</span>
           </label>
           <label class="check-label">
             <input id="continueOnError" type="checkbox">
@@ -94,7 +90,6 @@
             <thead>
               <tr>
                 <th>Row</th>
-                <th>Action</th>
                 <th>Target</th>
                 <th>Status</th>
                 <th>Message</th>
@@ -105,22 +100,34 @@
         </div>
       </section>
 
-      <section class="view" id="usersView" aria-labelledby="usersTitle">
+      <section class="view" id="manageView" aria-labelledby="manageTitle">
         <div class="section-heading">
-          <h2 id="usersTitle">Users</h2>
+          <h2 id="manageTitle">Manage Users</h2>
           <div class="actions">
             <label class="check-label compact">
               <input id="includeNotAssigned" type="checkbox" checked>
               <span>Unassigned</span>
             </label>
+            <label class="search-field">
+              <span>Search</span>
+              <input id="userSearch" placeholder="Name or email">
+            </label>
             <button class="secondary-button" id="loadUsersButton" type="button">Refresh</button>
           </div>
         </div>
-        <div class="users-layout">
+        <div class="bulk-toolbar">
+          <div class="selection-count" id="selectionCount">0 selected</div>
+          <button class="ghost-button" id="selectVisibleButton" type="button">Select Visible</button>
+          <button class="ghost-button" id="clearSelectionButton" type="button">Clear Selection</button>
+        </div>
+        <div class="bulk-layout">
           <div class="table-wrap user-list-wrap">
             <table>
               <thead>
                 <tr>
+                  <th class="select-col">
+                    <input id="selectAllUsers" type="checkbox" aria-label="Select all visible users">
+                  </th>
                   <th>Name</th>
                   <th>Email</th>
                   <th>Roles</th>
@@ -130,67 +137,228 @@
               <tbody id="usersTable"></tbody>
             </table>
           </div>
-          <form class="detail-panel" id="userDetailForm">
-            <input name="id" type="hidden">
-            <label>
-              <span>ID</span>
-              <input name="visibleId" disabled>
-            </label>
-            <label>
-              <span>Name</span>
-              <input name="name">
+          <form class="detail-panel" id="bulkUpdateForm">
+            <h3>Bulk Update</h3>
+            <label class="check-label">
+              <input id="updateTitleEnabled" type="checkbox">
+              <span>Set title</span>
             </label>
             <label>
               <span>Title</span>
-              <input name="title">
+              <input name="title" placeholder="Safety Manager">
+            </label>
+            <label class="check-label">
+              <input id="updateRolesEnabled" type="checkbox">
+              <span>Set roles</span>
+            </label>
+            <div class="role-options">
+              <label class="check-label">
+                <input name="roleNames" type="checkbox" value="admin">
+                <span>Admin</span>
+              </label>
+              <label class="check-label">
+                <input name="roleNames" type="checkbox" value="regionadmin">
+                <span>Region Admin</span>
+              </label>
+              <label class="check-label">
+                <input name="roleNames" type="checkbox" value="safetymanager">
+                <span>Safety Manager</span>
+              </label>
+            </div>
+            <label class="check-label">
+              <input id="updateProjectsEnabled" type="checkbox">
+              <span>Set project access</span>
             </label>
             <label>
-              <span>Mobile</span>
-              <input name="mobile">
+              <span>Project IDs</span>
+              <textarea name="userProjectIds" placeholder="One project ID per line"></textarea>
             </label>
-            <label>
-              <span>Roles</span>
-              <input name="roleNames" placeholder="admin, safetymanager">
+            <label class="check-label">
+              <input name="resetProjectPermissions" type="checkbox">
+              <span>Reset existing project permissions</span>
             </label>
-            <div class="actions detail-actions">
-              <button class="secondary-button" type="submit">Update</button>
-              <button class="danger-button" id="deleteUserButton" type="button">Delete</button>
+            <label class="check-label">
+              <input name="continueOnError" type="checkbox">
+              <span>Continue on error</span>
+            </label>
+            <div class="actions detail-actions stacked-actions">
+              <button class="secondary-button" type="submit">Update Selected</button>
+              <button class="danger-button" id="bulkDeleteButton" type="button">Delete Selected</button>
             </div>
           </form>
         </div>
         <div class="status-line" id="usersStatus">Ready</div>
       </section>
 
-      <section class="view" id="requestView" aria-labelledby="requestTitle">
+      <section class="view" id="projectsView" aria-labelledby="projectsTitle">
         <div class="section-heading">
-          <h2 id="requestTitle">Authenticated Request</h2>
-          <button class="secondary-button" id="sendRequestButton" type="button">Send</button>
+          <h2 id="projectsTitle">Manage Projects</h2>
+          <div class="actions">
+            <label class="check-label compact">
+              <input id="includeArchivedProjects" type="checkbox">
+              <span>Archived</span>
+            </label>
+            <label class="search-field">
+              <span>Search</span>
+              <input id="projectSearch" placeholder="Name, client, or ID">
+            </label>
+            <button class="secondary-button" id="loadProjectsButton" type="button">Refresh</button>
+          </div>
         </div>
-        <div class="request-grid">
-          <label>
-            <span>Method</span>
-            <select id="requestMethod">
-              <option>GET</option>
-              <option>POST</option>
-              <option>PATCH</option>
-              <option>PUT</option>
-              <option>DELETE</option>
-            </select>
-          </label>
-          <label class="request-url">
-            <span>Path or URL</span>
-            <input id="requestUrl" placeholder="/api/v1/Users">
-          </label>
-          <label class="check-label">
-            <input id="cookieOnly" type="checkbox">
-            <span>Cookie only</span>
-          </label>
+        <div class="bulk-toolbar">
+          <div class="selection-count" id="projectSelectionCount">0 selected</div>
+          <button class="ghost-button" id="selectVisibleProjectsButton" type="button">Select Visible</button>
+          <button class="ghost-button" id="clearProjectSelectionButton" type="button">Clear Selection</button>
         </div>
-        <label class="code-field">
-          <span>JSON Body</span>
-          <textarea id="requestBody" spellcheck="false"></textarea>
-        </label>
-        <pre class="response-box" id="requestResponse">{}</pre>
+        <div class="bulk-layout">
+          <div class="table-wrap user-list-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="select-col">
+                    <input id="selectAllProjects" type="checkbox" aria-label="Select all visible projects">
+                  </th>
+                  <th>Name</th>
+                  <th>Client</th>
+                  <th>Country</th>
+                  <th>State</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="projectsTable"></tbody>
+            </table>
+          </div>
+          <form class="detail-panel" id="bulkProjectUpdateForm">
+            <h3>Bulk Update</h3>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="name">
+              <span>Set project name</span>
+            </label>
+            <label>
+              <span>Project Name</span>
+              <input name="name">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="siteAddress">
+              <span>Set site address</span>
+            </label>
+            <label>
+              <span>Site Address</span>
+              <input name="siteAddress">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="country">
+              <span>Set country</span>
+            </label>
+            <label>
+              <span>Country</span>
+              <input name="country">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="state">
+              <span>Set state</span>
+            </label>
+            <label>
+              <span>State</span>
+              <input name="state">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="internalIdentifier">
+              <span>Set internal ID</span>
+            </label>
+            <label>
+              <span>Internal ID</span>
+              <input name="internalIdentifier">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="clientName">
+              <span>Set client name</span>
+            </label>
+            <label>
+              <span>Client Name</span>
+              <input name="clientName">
+            </label>
+            <label class="check-label">
+              <input name="continueOnError" type="checkbox">
+              <span>Continue on error</span>
+            </label>
+            <div class="actions detail-actions stacked-actions">
+              <button class="secondary-button" type="submit">Update Selected</button>
+            </div>
+          </form>
+        </div>
+        <div class="status-line" id="projectsStatus">Ready</div>
+      </section>
+
+      <section class="view" id="employersView" aria-labelledby="employersTitle">
+        <div class="section-heading">
+          <h2 id="employersTitle">Manage Employer Profiles</h2>
+          <div class="actions">
+            <label class="search-field">
+              <span>Search</span>
+              <input id="employerSearch" placeholder="Business name or ID">
+            </label>
+            <button class="secondary-button" id="loadEmployersButton" type="button">Refresh</button>
+          </div>
+        </div>
+        <div class="bulk-toolbar">
+          <div class="selection-count" id="employerSelectionCount">0 selected</div>
+          <button class="ghost-button" id="selectVisibleEmployersButton" type="button">Select Visible</button>
+          <button class="ghost-button" id="clearEmployerSelectionButton" type="button">Clear Selection</button>
+        </div>
+        <div class="bulk-layout">
+          <div class="table-wrap user-list-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th class="select-col">
+                    <input id="selectAllEmployers" type="checkbox" aria-label="Select all visible employer profiles">
+                  </th>
+                  <th>Business Name</th>
+                  <th>Regional ID</th>
+                  <th>Internal ID</th>
+                  <th>Status</th>
+                </tr>
+              </thead>
+              <tbody id="employersTable"></tbody>
+            </table>
+          </div>
+          <form class="detail-panel" id="bulkEmployerUpdateForm">
+            <h3>Bulk Update</h3>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="businessName">
+              <span>Set business name</span>
+            </label>
+            <label>
+              <span>Business Name</span>
+              <input name="businessName">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="abn">
+              <span>Set regional ID</span>
+            </label>
+            <label>
+              <span>Regional ID</span>
+              <input name="abn">
+            </label>
+            <label class="check-label">
+              <input name="enabledFields" type="checkbox" value="internalIdentifier">
+              <span>Set internal ID</span>
+            </label>
+            <label>
+              <span>Internal ID</span>
+              <input name="internalIdentifier">
+            </label>
+            <label class="check-label">
+              <input name="continueOnError" type="checkbox">
+              <span>Continue on error</span>
+            </label>
+            <div class="actions detail-actions stacked-actions">
+              <button class="secondary-button" type="submit">Update Selected</button>
+            </div>
+          </form>
+        </div>
+        <div class="status-line" id="employersStatus">Ready</div>
       </section>
     </main>
 

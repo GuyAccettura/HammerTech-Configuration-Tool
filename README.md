@@ -36,6 +36,13 @@ Then open:
 http://127.0.0.1:8787
 ```
 
+The UI has employee-facing work areas for users, projects, and employer profiles:
+
+- `Spreadsheet Import`: choose Users, Projects, or Employer Profiles; download the template; upload new records; run a dry run; then create them.
+- `Manage Users`: retrieve users into a selectable table, filter the table, bulk update selected users, or bulk delete selected users.
+- `Manage Projects`: retrieve projects into a selectable table, filter the table, and bulk update selected projects.
+- `Manage Employers`: retrieve employer profiles into a selectable table, filter the table, and bulk update selected employer profiles.
+
 Use `PORT` to choose another port:
 
 ```powershell
@@ -70,34 +77,43 @@ node ./src/cli.js auth token --save-session
 
 The session file is written to `.hammertech/session.json` by default and is ignored by git. Passwords are never stored.
 
-## Spreadsheet User Import
+## Spreadsheet Imports
 
-Start from [docs/users-template.csv](docs/users-template.csv).
+Start from one of the templates, or use **Download Template** in the local UI:
 
-Required columns for create rows:
+- [docs/users-template.csv](docs/users-template.csv)
+- [docs/projects-template.csv](docs/projects-template.csv)
+- [docs/employer-profiles-template.csv](docs/employer-profiles-template.csv)
+
+The local UI spreadsheet import is create-only. Use the matching **Manage** tab for updates. User delete is available in **Manage Users**; public Project and EmployerProfile delete endpoints were not exposed in the API docs I verified.
+
+Required user columns:
 
 | Column | Notes |
 | --- | --- |
-| `action` | `create`, `update`, `delete`, `get`, or `upsert`. Defaults to `create`. |
-| `email` | Required for create. Used to resolve existing users when `--match-by-email` is enabled. |
-| `name` | Required for create. |
-| `title` | Required for create. |
+| `email` | Required. |
+| `name` | Required. |
+| `title` | Required. |
 | `roleNames` | Comma, semicolon, newline, or JSON array. Valid public API examples are `admin`, `regionadmin`, `safetymanager`. |
 
 Optional API columns include `mobile`, `internalIdentifier`, `userProjectIds`, `regionAdminRegionIds`, `functionIds`, permission set IDs, future project flags, notification fields, confidential data fields, site diary fields, and project admin fields. Use HammerTech UUIDs for ID arrays.
+
+Required project columns are `name`, `country`, and `timeZoneString`.
+
+Required employer profile column is `businessName`.
 
 Supported import file types are `.csv`, `.xlsx`, and `.xlsm`.
 
 Dry run:
 
 ```powershell
-node ./src/cli.js users import --file .\docs\users-template.csv --match-by-email
+node ./src/cli.js users import --file .\docs\users-template.csv
 ```
 
 Apply changes:
 
 ```powershell
-node ./src/cli.js users import --file .\users.xlsx --sheet Users --match-by-email --apply
+node ./src/cli.js users import --file .\users.xlsx --sheet Users --apply
 ```
 
 By default, execution stops at the first failed row. Add `--continue-on-error` when batch imports should keep going.

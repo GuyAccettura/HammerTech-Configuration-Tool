@@ -1,4 +1,3 @@
-action,email,name,title,roleNames,mobile,internalIdentifier,userProjectIds,regionAdminRegionIds,isRegionAdmin
-create,jane.safety@example.com,Jane Safety,Safety Manager,safetymanager,+15555550100,EMP-1001,,
-upsert,pat.admin@example.com,Pat Admin,Regional Admin,"admin,regionadmin",+15555550101,EMP-1002,,00000000-0000-0000-0000-000000000000,true
-
+email,name,title,roleNames,mobile,internalIdentifier,userProjectIds,regionAdminRegionIds,isRegionAdmin
+jane.safety@example.com,Jane Safety,Safety Manager,safetymanager,+15555550100,EMP-1001,,
+pat.admin@example.com,Pat Admin,Regional Admin,"admin,regionadmin",+15555550101,EMP-1002,,00000000-0000-0000-0000-000000000000,true

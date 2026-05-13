@@ -224,6 +224,38 @@ export class HammerTechClient {
     return this.request("DELETE", `/api/v1/Users/${encodeURIComponent(id)}`);
   }
 
+  listProjects(query = {}) {
+    return this.request("GET", "/api/v1/Projects", { query });
+  }
+
+  getProject(id) {
+    return this.request("GET", `/api/v1/Projects/${encodeURIComponent(id)}`);
+  }
+
+  createProject(payload) {
+    return this.request("POST", "/api/v1/Projects", { body: payload });
+  }
+
+  patchProject(id, payload) {
+    return this.request("PATCH", `/api/v1/Projects/${encodeURIComponent(id)}`, { body: payload });
+  }
+
+  listEmployerProfiles(query = {}) {
+    return this.request("GET", "/api/v1/EmployerProfiles", { query });
+  }
+
+  getEmployerProfile(id) {
+    return this.request("GET", `/api/v1/EmployerProfiles/${encodeURIComponent(id)}`);
+  }
+
+  createEmployerProfile(payload) {
+    return this.request("POST", "/api/v1/EmployerProfiles", { body: payload });
+  }
+
+  patchEmployerProfile(id, payload) {
+    return this.request("PATCH", `/api/v1/EmployerProfiles/${encodeURIComponent(id)}`, { body: payload });
+  }
+
   toSession({ tenant, email } = {}) {
     return {
       region: this.region,

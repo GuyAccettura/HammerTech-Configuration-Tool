@@ -5,6 +5,14 @@ import { extname, join, normalize, resolve } from "node:path";
 import { readFile } from "node:fs/promises";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import { resolveAuthOptions } from "./config.js";
+import {
+  executeEntityCreateOperations,
+  getEntityConfig,
+  listAllEmployerProfiles,
+  listAllProjects,
+  normalizePatchPayload,
+  planEntityCreateOperations
+} from "./entities.js";
 import { HammerTechClient } from "./http.js";
 import { readSpreadsheetRowsFromBuffer } from "./spreadsheet.js";
 import { clientFromSession, deleteSession, loadSession, saveSession } from "./session.js";
@@ -45,6 +53,18 @@ async function routeApi(request, response, url, context) {
     return sendJson(response, 200, summarizeSession(session));
   }
 
+  if (request.method === "GET" && url.pathname.startsWith("/api/templates/")) {
+    const templateEntity = url.pathname.slice("/api/templates/".length).replace(/\.csv$/i, "");
+    const content = await readFile(join(projectRoot, "docs", templateFileFor(templateEntity)), "utf8");
+    response.writeHead(200, {
+      "content-type": "text/csv; charset=utf-8",
+      "content-disposition": `attachment; filename="hammertech-${templateEntity}-template.csv"`,
+      "cache-control": "no-store"
+    });
+    response.end(content);
+    return;
+  }
+
   if (request.method === "DELETE" && url.pathname === "/api/session") {
     await deleteSession(context.sessionPath);
     return sendJson(response, 200, { authenticated: false });
@@ -65,10 +85,64 @@ async function routeApi(request, response, url, context) {
     return sendJson(response, 200, { users });
   }
 
+  if (request.method === "GET" && url.pathname === "/api/projects") {
+    const client = await authenticatedClient(context.sessionPath);
+    const projects = await listAllProjects(client, queryObject(url));
+    return sendJson(response, 200, { projects });
+  }
+
+  if (request.method === "GET" && url.pathname === "/api/employer-profiles") {
+    const client = await authenticatedClient(context.sessionPath);
+    const employerProfiles = await listAllEmployerProfiles(client, queryObject(url));
+    return sendJson(response, 200, { employerProfiles });
+  }
+
   if (request.method === "POST" && url.pathname === "/api/users") {
     const client = await authenticatedClient(context.sessionPath);
     const body = await readJsonBody(request);
     return sendJson(response, 200, await client.createUser(body));
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/users/bulk/update") {
+    const client = await authenticatedClient(context.sessionPath);
+    const body = await readJsonBody(request);
+    const ids = normalizeIds(body.ids);
+    const payload = body.payload || {};
+    if (!Object.keys(payload).length) throw httpError(400, "Choose at least one field to update.");
+    const results = await executeBulk(ids, body.continueOnError, async (id) => {
+      return client.patchUser(id, payload, {
+        IsResetProjectPermissions: body.resetProjectPermissions ? "true" : undefined
+      });
+    });
+    return sendJson(response, 200, { results });
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/users/bulk/delete") {
+    const client = await authenticatedClient(context.sessionPath);
+    const body = await readJsonBody(request);
+    const ids = normalizeIds(body.ids);
+    const results = await executeBulk(ids, body.continueOnError, async (id) => client.deleteUser(id));
+    return sendJson(response, 200, { results });
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/projects/bulk/update") {
+    const client = await authenticatedClient(context.sessionPath);
+    const body = await readJsonBody(request);
+    const ids = normalizeIds(body.ids);
+    const payload = normalizePatchPayload("projects", body.payload);
+    if (!Object.keys(payload).length) throw httpError(400, "Choose at least one field to update.");
+    const results = await executeBulk(ids, body.continueOnError, async (id) => client.patchProject(id, payload));
+    return sendJson(response, 200, { results });
+  }
+
+  if (request.method === "POST" && url.pathname === "/api/employer-profiles/bulk/update") {
+    const client = await authenticatedClient(context.sessionPath);
+    const body = await readJsonBody(request);
+    const ids = normalizeIds(body.ids);
+    const payload = normalizePatchPayload("employer-profiles", body.payload);
+    if (!Object.keys(payload).length) throw httpError(400, "Choose at least one field to update.");
+    const results = await executeBulk(ids, body.continueOnError, async (id) => client.patchEmployerProfile(id, payload));
+    return sendJson(response, 200, { results });
   }
 
   if (request.method === "POST" && (url.pathname === "/api/users/import/plan" || url.pathname === "/api/users/import/apply")) {
@@ -79,12 +153,13 @@ async function routeApi(request, response, url, context) {
       sheet: url.searchParams.get("sheet") || undefined
     });
     const plan = planUserOperations(rows, {
-      defaultAction: url.searchParams.get("action") || "create"
+      defaultAction: "create",
+      forceAction: "create"
     });
     const client = apply ? await authenticatedClient(context.sessionPath) : null;
     const results = await executeUserOperations(client, plan.operations, {
       apply,
-      matchByEmail: url.searchParams.get("matchByEmail") === "true",
+      matchByEmail: false,
       continueOnError: url.searchParams.get("continueOnError") === "true"
     });
     return sendJson(response, 200, {
@@ -92,6 +167,48 @@ async function routeApi(request, response, url, context) {
       hasErrors: results.some((result) => result.status === "invalid" || result.status === "failed"),
       results
     });
+  }
+
+  if (request.method === "POST" && (
+    url.pathname === "/api/projects/import/plan" ||
+    url.pathname === "/api/projects/import/apply" ||
+    url.pathname === "/api/employer-profiles/import/plan" ||
+    url.pathname === "/api/employer-profiles/import/apply"
+  )) {
+    const apply = url.pathname.endsWith("/apply");
+    const entity = url.pathname.startsWith("/api/projects/") ? "projects" : "employer-profiles";
+    const fileName = request.headers["x-file-name"] || `${entity}.csv`;
+    const buffer = await readBody(request);
+    const rows = await readSpreadsheetRowsFromBuffer(String(fileName), buffer, {
+      sheet: url.searchParams.get("sheet") || undefined
+    });
+    const plan = planEntityCreateOperations(entity, rows);
+    const client = apply ? await authenticatedClient(context.sessionPath) : null;
+    const results = await executeEntityCreateOperations(client, plan.operations, {
+      apply,
+      continueOnError: url.searchParams.get("continueOnError") === "true"
+    });
+    return sendJson(response, 200, {
+      rowCount: rows.length,
+      hasErrors: results.some((result) => result.status === "invalid" || result.status === "failed"),
+      results
+    });
+  }
+
+  if (url.pathname.startsWith("/api/projects/")) {
+    const client = await authenticatedClient(context.sessionPath);
+    const id = decodeURIComponent(url.pathname.slice("/api/projects/".length));
+    if (!id) throw httpError(400, "Missing project id.");
+    if (request.method === "GET") return sendJson(response, 200, await client.getProject(id));
+    if (request.method === "PATCH") return sendJson(response, 200, await client.patchProject(id, normalizePatchPayload("projects", await readJsonBody(request))));
+  }
+
+  if (url.pathname.startsWith("/api/employer-profiles/")) {
+    const client = await authenticatedClient(context.sessionPath);
+    const id = decodeURIComponent(url.pathname.slice("/api/employer-profiles/".length));
+    if (!id) throw httpError(400, "Missing employer profile id.");
+    if (request.method === "GET") return sendJson(response, 200, await client.getEmployerProfile(id));
+    if (request.method === "PATCH") return sendJson(response, 200, await client.patchEmployerProfile(id, normalizePatchPayload("employer-profiles", await readJsonBody(request))));
   }
 
   if (url.pathname.startsWith("/api/users/")) {
@@ -207,6 +324,36 @@ function httpError(statusCode, message) {
   const error = new Error(message);
   error.statusCode = statusCode;
   return error;
+}
+
+function normalizeIds(ids) {
+  if (!Array.isArray(ids) || !ids.length) throw httpError(400, "Select at least one user.");
+  const normalized = ids.map((id) => String(id || "").trim()).filter(Boolean);
+  if (!normalized.length) throw httpError(400, "Select at least one user.");
+  return normalized;
+}
+
+function templateFileFor(entity) {
+  if (entity === "users") return "users-template.csv";
+  return getEntityConfig(entity).templateFile;
+}
+
+async function executeBulk(ids, continueOnError, action) {
+  const results = [];
+  for (const id of ids) {
+    try {
+      results.push({ id, status: "success", response: await action(id) });
+    } catch (error) {
+      results.push({
+        id,
+        status: "failed",
+        error: error.message,
+        responseBody: error.responseBody
+      });
+      if (!continueOnError) break;
+    }
+  }
+  return results;
 }
 
 function contentType(filePath) {
